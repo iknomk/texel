@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+```
+<title>Texel — тест авторизации</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #f3f4f6;
+        color: #222;
+    }
+
+    .container {
+        width: 900px;
+        max-width: 95%;
+        margin: 40px auto;
+    }
+
+    h1 {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .card {
+        background: white;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 3px 15px rgba(0, 0, 0, 0.08);
+    }
+
+    .card h2 {
+        margin-top: 0;
+    }
+
+    input {
+        width: 100%;
+        padding: 12px;
+        margin: 8px 0;
+        border: 1px solid #ccc;
+        border-radius: 7px;
+        font-size: 15px;
+    }
+
+    button {
+        width: 100%;
+        padding: 12px;
+        margin-top: 10px;
+        border: none;
+        border-radius: 7px;
+        background: #222;
+        color: white;
+        font-size: 15px;
+        cursor: pointer;
+    }
+
+    button:hover {
+        background: #444;
+    }
+
+    .danger {
+        background: #b42318;
+    }
+
+    .danger:hover {
+        background: #8e1c13;
+    }
+
+    .info {
+        margin-top: 15px;
+        padding: 12px;
+        background: #f1f1f1;
+        border-radius: 7px;
+        word-break: break-word;
+    }
+
+    .success {
+        color: #087443;
+    }
+
+    .error {
+        color: #b42318;
+    }
+
+    .token {
+        font-size: 12px;
+        word-break: break-all;
+    }
+
+    .upload-section {
+        margin-top: 20px;
+    }
+
+    #userInfo {
+        white-space: pre-wrap;
+    }
+
+    @media (max-width: 700px) {
+        .grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+```
+
+</head>
+
+<body>
+
+<div class="container">
+
+```
+<h1>Texel — тест API</h1>
+
+<div class="grid">
+
+    <!-- РЕГИСТРАЦИЯ -->
+    <div class="card">
+
+        <h2>Регистрация</h2>
+
+        <input
+            type="text"
+            id="registerUsername"
+            placeholder="Username"
+        >
+
+        <input
+            type="email"
+            id="registerEmail"
+            placeholder="Email"
+        >
+
+        <input
+            type="password"
+            id="registerPassword"
+            placeholder="Пароль"
+        >
+
+        <button onclick="register()">
+            Зарегистрироваться
+        </button>
+
+        <div id="registerResult" class="info">
+            Здесь появится результат регистрации
+        </div>
+
+    </div>
+
+
+    <!-- ВХОД -->
+    <div class="card">
+
+        <h2>Вход</h2>
+
+        <input
+            type="text"
+            id="loginUsername"
+            placeholder="Username"
+        >
+
+        <input
+            type="password"
+            id="loginPassword"
+            placeholder="Пароль"
+        >
+
+        <button onclick="login()">
+            Войти
+        </button>
+
+        <div id="loginResult" class="info">
+            Здесь появится результат входа
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ПОЛЬЗОВАТЕЛЬ -->
+<div class="card" style="margin-top: 20px;">
+
+    <h2>Текущий пользователь</h2>
+
+    <button onclick="getMe()">
+        Получить информацию о пользователе
+    </button>
+
+    <div id="userInfo" class="info">
+        Информация о пользователе пока не получена
+    </div>
+
+</div>
+
+
+<!-- ЗАГРУЗКА -->
+<div class="card upload-section">
+
+    <h2>Загрузка фотографии</h2>
+
+    <input
+        type="file"
+        id="photo"
+        accept="image/*"
+    >
+
+    <button onclick="uploadPhoto()">
+        Загрузить фотографию
+    </button>
+
+    <div id="uploadResult" class="info">
+        Здесь появится результат загрузки
+    </div>
+
+</div>
+
+
+<!-- ВЫХОД -->
+<div class="card" style="margin-top: 20px;">
+
+    <h2>Авторизация</h2>
+
+    <div id="authStatus" class="info">
+        Пользователь не авторизован
+    </div>
+
+    <button
+        class="danger"
+        onclick="logout()"
+    >
+        Выйти
+    </button>
+
+</div>
+```
+
+</div>
+
+<script>
+
+    const API_URL = "http://127.0.0.1:8000";
+
+
+    // =========================
+    // РЕГИСТРАЦИЯ
+    // =========================
+
+    async function register() {
+
+        const username =
+            document.getElementById("registerUsername").value;
+
+        const email =
+            document.getElementById("registerEmail").value;
+
+        const password =
+            document.getElementById("registerPassword").value;
+
+        const result =
+            document.getElementById("registerResult");
+
+
+        if (!username || !email || !password) {
+
+            result.innerHTML =
+                '<span class="error">Заполните все поля</span>';
+
+            return;
+        }
+
+
+        try {
+
+            const response = await fetch(
+                `${API_URL}/api/auth/register`,
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        username: username,
+                        email: email,
+                        password: password
+                    })
+                }
+            );
+
+
+            const data = await response.json();
+
+
+            if (!response.ok) {
+
+                result.innerHTML =
+                    `<span class="error">${data.detail}</span>`;
+
+                return;
+            }
+
+
+            result.innerHTML =
+                `<span class="success">
+                    Регистрация успешна!<br>
+                    Пользователь: ${data.username}<br>
+                    ID: ${data.user_id}
+                </span>`;
+
+        } catch (error) {
+
+            result.innerHTML =
+                `<span class="error">
+                    Ошибка соединения с сервером
+                </span>`;
+
+            console.error(error);
+        }
+    }
+
+
+    // =========================
+    // ВХОД
+    // =========================
+
+    async function login() {
+
+        const username =
+            document.getElementById("loginUsername").value;
+
+        const password =
+            document.getElementById("loginPassword").value;
+
+        const result =
+            document.getElementById("loginResult");
+
+
+        if (!username || !password) {
+
+            result.innerHTML =
+                '<span class="error">Введите username и пароль</span>';
+
+            return;
+        }
+
+
+        try {
+
+            const response = await fetch(
+                `${API_URL}/api/auth/login`,
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        username: username,
+                        password: password
+                    })
+                }
+            );
+
+
+            const data = await response.json();
+
+
+            if (!response.ok) {
+
+                result.innerHTML =
+                    `<span class="error">${data.detail}</span>`;
+
+                return;
+            }
+
+
+            // Сохраняем JWT
+            localStorage.setItem(
+                "access_token",
+                data.access_token
+            );
+
+
+            result.innerHTML =
+                `<span class="success">
+                    Вход выполнен успешно!
+                </span>
+                <br><br>
+                <strong>JWT токен:</strong>
+                <div class="token">
+                    ${data.access_token}
+                </div>`;
+
+
+            updateAuthStatus();
+
+        } catch (error) {
+
+            result.innerHTML =
+                `<span class="error">
+                    Ошибка соединения с сервером
+                </span>`;
+
+            console.error(error);
+        }
+    }
+
+
+    // =========================
+    // ПОЛУЧЕНИЕ ПОЛЬЗОВАТЕЛЯ
+    // =========================
+
+    async function getMe() {
+
+        const token =
+            localStorage.getItem("access_token");
+
+        const result =
+            document.getElementById("userInfo");
+
+
+        if (!token) {
+
+            result.innerHTML =
+                '<span class="error">Сначала выполните вход</span>';
+
+            return;
+        }
+
+
+        try {
+
+            const response = await fetch(
+                `${API_URL}/api/auth/me`,
+                {
+                    method: "GET",
+
+                    headers: {
+                        "Authorization": `Bearer ${token}`
+                    }
+                }
+            );
+
+
+            const data = await response.json();
+
+
+            if (!response.ok) {
+
+                result.innerHTML =
+                    `<span class="error">${data.detail}</span>`;
+
+                return;
+            }
+
+
+            result.innerHTML =
+                `<span class="success">
+                    Авторизованный пользователь:
+                </span>
+
+                <br><br>
+
+                ID: ${data.id}
+
+                <br>
+
+                Username: ${data.username}
+
+                <br>
+
+                Email: ${data.email}`;
+
+        } catch (error) {
+
+            result.innerHTML =
+                '<span class="error">Ошибка сервера</span>';
+
+            console.error(error);
+        }
+    }
+
+
+    // =========================
+    // ЗАГРУЗКА ФОТО
+    // =========================
+
+    async function uploadPhoto() {
+
+        const token =
+            localStorage.getItem("access_token");
+
+        const fileInput =
+            document.getElementById("photo");
+
+        const result =
+            document.getElementById("uploadResult");
+
+
+        if (!token) {
+
+            result.innerHTML =
+                '<span class="error">Сначала войдите в систему</span>';
+
+            return;
+        }
+
+
+        if (!fileInput.files.length) {
+
+            result.innerHTML =
+                '<span class="error">Выберите фотографию</span>';
+
+            return;
+        }
+
+
+        const formData = new FormData();
+
+        formData.append(
+            "file",
+            fileInput.files[0]
+        );
+
+
+        try {
+
+            const response = await fetch(
+                `${API_URL}/api/models`,
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Authorization": `Bearer ${token}`
+                    },
+
+                    body: formData
+                }
+            );
+
+
+            const data = await response.json();
+
+
+            if (!response.ok) {
+
+                result.innerHTML =
+                    `<span class="error">${data.detail}</span>`;
+
+                return;
+            }
+
+
+            result.innerHTML =
+                `<span class="success">
+                    Фотография успешно загружена!
+                </span>
+
+                <br><br>
+
+                Файл: ${data.filename}
+
+                <br>
+
+                Статус: ${data.status}`;
+
+        } catch (error) {
+
+            result.innerHTML =
+                '<span class="error">Ошибка загрузки</span>';
+
+            console.error(error);
+        }
+    }
+
+
+    // =========================
+    // ВЫХОД
+    // =========================
+
+    function logout() {
+
+        localStorage.removeItem("access_token");
+
+        document.getElementById("authStatus").innerHTML =
+            '<span class="success">Вы вышли из аккаунта</span>';
+
+        document.getElementById("loginResult").innerHTML =
+            "Выполните вход для авторизации";
+
+        document.getElementById("userInfo").innerHTML =
+            "Пользователь не авторизован";
+    }
+
+
+    // =========================
+    // СТАТУС АВТОРИЗАЦИИ
+    // =========================
+
+    function updateAuthStatus() {
+
+        const token =
+            localStorage.getItem("access_token");
+
+        const status =
+            document.getElementById("authStatus");
+
+
+        if (token) {
+
+            status.innerHTML =
+                '<span class="success">Пользователь авторизован ✓</span>';
+
+        } else {
+
+            status.innerHTML =
+                'Пользователь не авторизован';
+        }
+    }
+
+
+    // Проверяем авторизацию при загрузке страницы
+    updateAuthStatus();
+
+</script>
+
+</body>
+</html>
