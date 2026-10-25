@@ -1,134 +1,36 @@
 <script setup>
-
-import {
-    ref,
-    onMounted
-} from "vue";
-
-import {
-    useRouter
-} from "vue-router";
-
-import {
-    getCurrentUser,
-    logout,
-    isAuthenticated
-} from "../services/api";
-
-
+import { ref, onMounted, onBeforeUnmount } from "vue";
+import { useRouter } from "vue-router";
+import { getCurrentUser, logout, isAuthenticated } from "../services/api";
 const router = useRouter();
-
-
-// Текущий пользователь
-const username = ref(null);
-
-
-// Проверяем авторизацию
+const username = ref("");
 async function loadUser() {
-
-    if (!isAuthenticated()) {
-        return;
-    }
-
-    try {
-
-        const user =
-            await getCurrentUser();
-
-        username.value =
-            user.username;
-
-    } catch {
-
-        logout();
-
-        username.value = null;
-
-    }
+  if (!isAuthenticated()) { username.value = ""; return; }
+  try { const user = await getCurrentUser(); username.value = user.username; }
+  catch { username.value = ""; }
 }
-
-
-// Выход из аккаунта
-function handleLogout() {
-
-    logout();
-
-    username.value = null;
-
-    router.push("/login");
-}
-
-
-onMounted(() => {
-
-    loadUser();
-
-});
-
+function openAuth(type) { window.dispatchEvent(new CustomEvent("texel:open-auth", { detail: type })); }
+function handleLogout() { logout(); username.value = ""; router.push("/"); }
+onMounted(() => { loadUser(); window.addEventListener("texel:auth-changed", loadUser); });
+onBeforeUnmount(() => window.removeEventListener("texel:auth-changed", loadUser));
 </script>
-
-
 <template>
-
-    <header class="navbar">
-
-        <div class="navbar-container">
-
-            <!-- Название проекта -->
-            <router-link
-                to="/"
-                class="logo"
-            >
-                Texel 3D
-            </router-link>
-
-
-            <nav class="nav-links">
-
-                <router-link to="/">
-                    Главная
-                </router-link>
-
-
-                <template v-if="username">
-
-                    <router-link to="/profile">
-                        Профиль
-                    </router-link>
-
-                    <span class="username">
-                        {{ username }}
-                    </span>
-
-                    <button
-                        class="nav-button"
-                        @click="handleLogout"
-                    >
-                        Выйти
-                    </button>
-
-                </template>
-
-
-                <template v-else>
-
-                    <router-link to="/login">
-                        Войти
-                    </router-link>
-
-                    <router-link
-                        to="/register"
-                        class="register-link"
-                    >
-                        Регистрация
-                    </router-link>
-
-                </template>
-
-            </nav>
-
-        </div>
-
-    </header>
-
+  <header class="site-header">
+    <div class="header-inner">
+      <router-link to="/" class="brand"><span class="brand-mark">t</span> texel<span class="brand-dot">.</span></router-link>
+      <nav class="header-nav">
+        <a href="#how-it-works">Как это работает</a>
+        <a href="#possibilities">Возможности</a>
+        <template v-if="username">
+          <router-link to="/profile" class="nav-profile">{{ username }}</router-link>
+          <button class="button button-outline header-cta" @click="handleLogout">Выйти</button>
+        </template>
+        <template v-else>
+          <button class="nav-login" @click="openAuth('login')">Войти</button>
+          <button class="button button-primary header-cta" @click="openAuth('register')">Начать бесплатно <span>↗</span></button>
+        </template>
+      </nav>
+      <button class="mobile-cta" @click="username ? router.push('/profile') : openAuth('register')">{{ username ? "Профиль" : "Начать" }}</button>
+    </div>
+  </header>
 </template>

@@ -1,183 +1,50 @@
 <script setup>
-
-import {
-    ref,
-    onMounted
-} from "vue";
-
-import {
-    useRouter
-} from "vue-router";
-
-import PhotoUploader
-    from "../components/PhotoUploader.vue";
-
-import {
-    isAuthenticated,
-    getCurrentUser
-} from "../services/api";
-
+import { ref } from "vue";
+import { useRouter } from "vue-router";
+import { register } from "../services/api";
 
 const router = useRouter();
+const username = ref("");
+const email = ref("");
+const password = ref("");
+const error = ref("");
+const loading = ref(false);
 
-const username = ref(null);
-
-
-onMounted(async () => {
-
-    if (!isAuthenticated()) {
-        return;
-    }
-
-    try {
-
-        const user =
-            await getCurrentUser();
-
-        username.value =
-            user.username;
-
-    } catch {
-
-        username.value = null;
-
-    }
-
-});
-
-
-// Переход к авторизации
-function goToLogin() {
-
+async function handleRegister() {
+  error.value = "";
+  loading.value = true;
+  try {
+    await register(username.value.trim(), email.value.trim(), password.value);
     router.push("/login");
-
+  } catch (err) {
+    error.value = err.message || "Не удалось зарегистрироваться";
+  } finally {
+    loading.value = false;
+  }
 }
-
 </script>
 
-
 <template>
+  <div class="auth-page">
+    <div class="auth-card">
+      <h1>Регистрация</h1>
+      <p class="auth-description">Создайте аккаунт Texel</p>
+      <form @submit.prevent="handleRegister">
+        <label for="username">Имя пользователя</label>
+        <input id="username" v-model="username" type="text" autocomplete="username" minlength="3" maxlength="50" required />
 
-    <div class="home">
+        <label for="email">Электронная почта</label>
+        <input id="email" v-model="email" type="email" autocomplete="email" required />
 
-        <section class="hero">
+        <label for="password">Пароль</label>
+        <input id="password" v-model="password" type="password" autocomplete="new-password" minlength="8" required />
 
-            <h1>
-                Построение 3D-моделей
-                по фотографиям
-            </h1>
-
-            <p>
-                Загружайте фотографии объекта
-                и подготавливайте их для
-                последующего построения
-                3D-модели.
-            </p>
-
-
-            <div v-if="!username">
-
-                <button
-                    class="primary-button"
-                    @click="goToLogin"
-                >
-                    Начать работу
-                </button>
-
-            </div>
-
-
-            <div v-else>
-
-                <p class="welcome">
-                    Добро пожаловать,
-                    <strong>{{ username }}</strong>!
-                </p>
-
-            </div>
-
-        </section>
-
-
-        <!-- Загрузка фотографий -->
-
-        <section
-            v-if="username"
-            class="upload-section"
-        >
-
-            <h2>
-                Загрузка фотографии
-            </h2>
-
-            <PhotoUploader />
-
-        </section>
-
-
-        <section
-            v-else
-            class="info-section"
-        >
-
-            <h2>
-                Как это работает?
-            </h2>
-
-            <div class="steps">
-
-                <div class="step">
-
-                    <span>1</span>
-
-                    <h3>
-                        Регистрация
-                    </h3>
-
-                    <p>
-                        Создайте аккаунт
-                        в системе.
-                    </p>
-
-                </div>
-
-
-                <div class="step">
-
-                    <span>2</span>
-
-                    <h3>
-                        Загрузка
-                    </h3>
-
-                    <p>
-                        Загрузите фотографии
-                        объекта.
-                    </p>
-
-                </div>
-
-
-                <div class="step">
-
-                    <span>3</span>
-
-                    <h3>
-                        3D-модель
-                    </h3>
-
-                    <p>
-                        Фотографии будут
-                        использоваться для
-                        построения 3D-модели.
-                    </p>
-
-                </div>
-
-            </div>
-
-        </section>
-
+        <p v-if="error" class="error-message">{{ error }}</p>
+        <button class="primary-button full-width" type="submit" :disabled="loading">
+          {{ loading ? "Создание аккаунта..." : "Зарегистрироваться" }}
+        </button>
+      </form>
+      <p class="auth-footer">Уже есть аккаунт? <router-link to="/login">Войти</router-link></p>
     </div>
-
+  </div>
 </template>

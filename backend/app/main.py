@@ -357,7 +357,8 @@ UPLOAD_DIR.mkdir(
 
 @app.post("/api/models")
 async def upload_photo(
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
 ):
 
     # Проверяем тип файла
