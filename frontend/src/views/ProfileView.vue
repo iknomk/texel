@@ -67,6 +67,7 @@ onMounted(loadProfile);
       <p>
         Выбери фото, с которого начнётся создание твоего 3D-аватара.
       </p>
+
       <PhotoUploader />
     </section>
   </main>

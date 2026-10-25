@@ -12,3 +12,213 @@
 .uploader{display:flex;flex-direction:column;gap:16px}.file-input input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}.file-input label{display:block;padding:28px 18px;text-align:center;border:1px dashed #69415c;border-radius:8px;cursor:pointer;color:#c9bac9;font-size:12px;background:#151017}.file-input label:hover{border-color:var(--pink);color:white}.selected-file{padding:12px;background:#1b141d;border-radius:6px;color:#c9bac9;font-size:11px;overflow-wrap:anywhere}.selected-file strong{color:#fff}.success-box{padding:16px;background:#11241d;border:1px solid #1f513e;border-radius:7px;color:#a7f3d0;font-size:12px}.success-box h3{font-size:13px;margin:0 0 10px}.success-box code{display:block;padding:10px;background:#0a1712;border-radius:5px;word-break:break-all}.error-message{padding:12px;border-radius:7px;background:#421c2a;color:#ffb4ce;font-size:12px}
 @media(max-width:800px){.header-inner{padding:0 20px}.header-nav{gap:17px}.header-nav>a:nth-child(1),.header-nav>a:nth-child(2){display:none}.hero-section{padding:65px 28px 65px;grid-template-columns:1fr;gap:10px}.hero-copy{max-width:580px}.hero-copy h1{font-size:clamp(43px,8vw,65px)}.hero-art{height:350px;margin-top:-5px}.hero-avatar{height:340px}.art-orbit{width:80%;height:180px}.orbit-two{height:300px}.hero-bottom-note{left:28px}.content-section{padding:75px 24px}.feature-section{gap:35px}.feature-visual{min-height:300px}.steps-grid{gap:10px}.step-card{padding:20px 16px}.site-footer{padding:24px 20px}}
 @media(max-width:560px){.site-header{height:68px}.header-inner{padding:0 16px}.brand{font-size:23px}.header-nav{gap:13px}.header-nav .nav-login{font-size:11px}.header-cta{font-size:10px;padding:10px 11px}.header-cta span{display:none}.mobile-cta{display:none}.hero-section{padding:58px 22px 58px;min-height:auto}.hero-copy h1{font-size:43px;letter-spacing:-2.3px}.hero-description{font-size:12px}.hero-actions{gap:18px}.hero-button{padding:15px 16px}.hero-art{height:300px}.hero-avatar{height:300px}.art-label{top:7px;right:-3px}.chip-top{top:54px;left:-4px}.chip-bottom{bottom:32px;right:-2px}.spark-one{top:38px}.spark-two{bottom:46px}.hero-proof{margin-top:30px}.hero-bottom-note{left:22px;font-size:7px}.content-section{padding:62px 20px}.section-heading h2{font-size:34px;letter-spacing:-1.5px}.section-heading>p:last-child{line-height:1.8}.steps-grid{grid-template-columns:1fr}.step-card{min-height:185px;padding:22px}.step-card h3{margin-top:20px}.feature-section{grid-template-columns:1fr;gap:18px;padding-top:25px}.feature-visual{min-height:270px}.feature-visual img{max-height:290px;object-fit:contain}.feature-copy h2{font-size:43px}.closing-section{padding:70px 20px}.closing-decoration{right:7%;font-size:55px}.site-footer{gap:14px;flex-wrap:wrap}.site-footer>span:nth-child(2){display:none}.auth-modal{padding:32px 23px 25px}.auth-modal h2{font-size:27px}.profile-plain{padding:45px 20px;min-height:calc(100vh - 68px)}.profile-topline{align-items:flex-start;flex-direction:column}.profile-topline h1{font-size:42px}.profile-upload{padding:20px 16px}.profile-user{margin-top:25px}}
+
+
+/* Кнопка загрузки фотографии в профиле */
+.profile-upload .primary-button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 19px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: linear-gradient(110deg, #ff2997, #e81784);
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 8px 28px rgba(255, 30, 145, 0.2);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
+}
+
+.profile-upload .primary-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+  box-shadow:
+    0 0 12px rgba(255, 44, 156, 0.3),
+    0 10px 35px rgba(255, 30, 145, 0.4);
+}
+
+.profile-upload .primary-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.profile-upload .primary-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.profile-upload .primary-button:focus-visible {
+  outline: 2px solid #ff5bb4;
+  outline-offset: 3px;
+}
+
+
+
+/* Зона drag and drop в профиле Texel */
+.photo-file-input {
+  display: none;
+}
+
+.photo-dropzone {
+  width: 100%;
+  min-height: 255px;
+  padding: 30px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 1px dashed rgba(255, 76, 170, 0.48);
+  border-radius: 10px;
+  background:
+    radial-gradient(
+      ellipse at 50% 0%,
+      rgba(255, 38, 151, 0.09),
+      transparent 70%
+    ),
+    #151017;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.photo-dropzone:hover,
+.photo-dropzone-active {
+  border-color: #ff3e9f;
+  background:
+    radial-gradient(
+      ellipse at 50% 0%,
+      rgba(255, 38, 151, 0.17),
+      transparent 75%
+    ),
+    #191019;
+  box-shadow: 0 0 24px rgba(255, 44, 156, 0.13);
+}
+
+.photo-dropzone-active {
+  transform: scale(1.01);
+  box-shadow: 0 0 30px rgba(255, 44, 156, 0.24);
+}
+
+.dropzone-icon {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  margin-bottom: 17px;
+  color: #ff63b3;
+  border: 1px solid rgba(255, 76, 170, 0.3);
+  border-radius: 14px;
+  background: rgba(255, 44, 156, 0.08);
+}
+
+.dropzone-title {
+  margin: 0;
+  color: #f8f1f8;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.dropzone-description {
+  margin: 8px 0 18px;
+  color: #a99eab;
+  font-size: 12px;
+}
+
+.file-picker-button {
+  padding: 12px 19px;
+  border: 1px solid rgba(255, 94, 181, 0.5);
+  border-radius: 7px;
+  background: linear-gradient(110deg, #ff2997, #e81784);
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 5px 20px rgba(255, 30, 145, 0.18);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
+}
+
+.file-picker-button:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+  box-shadow: 0 0 22px rgba(255, 44, 156, 0.35);
+}
+
+.file-picker-button:focus-visible {
+  outline: 2px solid #ff5bb4;
+  outline-offset: 3px;
+}
+
+.dropzone-hint {
+  margin: 16px 0 0;
+  color: #817684;
+  font-size: 10px;
+}
+
+.selected-file {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.selected-file-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.selected-file-info strong {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.selected-file-info span {
+  display: block;
+  margin-top: 5px;
+  color: #9c909e;
+  font-size: 10px;
+}
+
+.remove-selected-file {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #49303f;
+  border-radius: 6px;
+  background: #21141f;
+  color: #ff75ba;
+  font-size: 21px;
+  cursor: pointer;
+}
+
+.remove-selected-file:hover {
+  border-color: #ff3e9f;
+  background: #351329;
+}
+
+@media (max-width: 560px) {
+  .photo-dropzone {
+    min-height: 235px;
+    padding: 24px 14px;
+  }
+
+  .dropzone-title {
+    font-size: 13px;
+  }
+
+  .dropzone-description {
+    font-size: 11px;
+  }
+}
