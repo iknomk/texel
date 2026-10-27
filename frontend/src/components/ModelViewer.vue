@@ -76,6 +76,20 @@ function loadModel(url) {
       if (disposed) return;
 
       currentModel = gltf.scene;
+      currentModel.traverse((object) => {
+        if (!object.isMesh) return;
+        const materials = Array.isArray(object.material) ? object.material : [object.material];
+        for (const material of materials) {
+          if (!material?.color) continue;
+          material.color.set("#efbfd0");
+          material.map = null;
+          material.vertexColors = false;
+          material.emissive?.set(0x000000);
+          if ("roughness" in material) material.roughness = 0.85;
+          if ("metalness" in material) material.metalness = 0;
+          material.needsUpdate = true;
+        }
+      });
       scene.add(currentModel);
       fitModel(currentModel);
       loading.value = false;
@@ -121,17 +135,21 @@ onMounted(() => {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.15;
+  renderer.toneMappingExposure = 1.05;
 
   host.value.prepend(renderer.domElement);
 
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x372238, 2));
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8b7181, 2.25));
 
-  const mainLight = new THREE.DirectionalLight(0xffffff, 3);
+  const mainLight = new THREE.DirectionalLight(0xffffff, 2.4);
   mainLight.position.set(4, 6, 5);
   scene.add(mainLight);
 
-  const pinkLight = new THREE.PointLight(0xff2c9c, 22, 20);
+  const backLight = new THREE.DirectionalLight(0xfff5fa, 1.1);
+  backLight.position.set(-4, 2, -5);
+  scene.add(backLight);
+
+  const pinkLight = new THREE.DirectionalLight(0xffd6e5, 0.4);
   pinkLight.position.set(-3, 2, 2);
   scene.add(pinkLight);
 

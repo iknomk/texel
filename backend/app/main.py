@@ -4,11 +4,9 @@ import shutil
 
 import bcrypt
 
-import cv2
-import numpy as np
-
-from PIL import Image
-from rembg import remove
+from .image_processing import prepare_foreground
+from .generation_errors import describe_generation_error
+from .image_validation import save_validated_photo
 
 from fastapi.responses import FileResponse
 
@@ -386,17 +384,6 @@ async def upload_photo(
     current_user: User = Depends(get_current_user)
 ):
 
-    # Проверяем тип файла
-
-    if (
-        not file.content_type
-        or not file.content_type.startswith("image/")
-    ):
-        raise HTTPException(
-            status_code=400,
-            detail="Разрешены только изображения"
-        )
-
     # Получаем расширение
 
     file_extension = Path(
@@ -415,12 +402,7 @@ async def upload_photo(
 
     # Сохраняем файл
 
-    with file_path.open("wb") as buffer:
-
-        shutil.copyfileobj(
-            file.file,
-            buffer
-        )
+    save_validated_photo(file, file_path)
 
     return {
         "filename": new_filename,
@@ -448,23 +430,8 @@ def preprocess_image(source_path: Path) -> Path:
     Удаляет фон, сохраняет естественные цвета и детали человека.
     Возвращает путь к PNG с прозрачным фоном для генерации 3D.
     """
-    import io
-
     output_path = UPLOAD_DIR / f"{uuid4()}_processed.png"
-
-    # 1. Читаем исходную фотографию
-    with source_path.open("rb") as file:
-        image_bytes = file.read()
-
-    # 2. Удаляем фон, сохраняя изображение человека
-    result_bytes = remove(image_bytes)
-
-    # 3. Открываем изображение в RGBA:
-    # сохраняем исходные цвета и прозрачность
-    image = Image.open(io.BytesIO(result_bytes)).convert("RGBA")
-
-    # 4. Сохраняем без постеризации, контуров и агрессивных фильтров
-    image.save(output_path, format="PNG")
+    prepare_foreground(source_path, output_path)
 
     print(f"Подготовленное изображение сохранено: {output_path}")
 
@@ -475,12 +442,6 @@ def generate_3d_model(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user)
 ):
-    if not file.content_type or not file.content_type.startswith("image/"):
-        raise HTTPException(
-            status_code=400,
-            detail="Загрузите изображение JPG, PNG или WEBP"
-        )
-
     temp_path = None
     processed_path = None
 
@@ -488,8 +449,7 @@ def generate_3d_model(
         # Временно сохраняем входное фото
         temp_path = UPLOAD_DIR / f"{uuid4()}_{Path(file.filename or 'photo.png').name}"
 
-        with temp_path.open("wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+        save_validated_photo(file, temp_path)
 
         processed_path = preprocess_image(temp_path)
 
@@ -562,15 +522,15 @@ def generate_3d_model(
             "url": f"/generated_models/{model_name}"
         }
 
+    except HTTPException:
+        raise
     except Exception as exc:
         import traceback
 
         traceback.print_exc()
 
-        raise HTTPException(
-            status_code=502,
-            detail=f"Не удалось создать 3D-модель: {type(exc).__name__}: {exc}"
-        )
+        status_code, detail = describe_generation_error(exc)
+        raise HTTPException(status_code=status_code, detail=detail) from exc
 
     finally:
         if temp_path and temp_path.exists():

@@ -1,21 +1,51 @@
 <script setup>
-import { ref } from "vue";
+import { ref, onBeforeUnmount } from "vue";
 import { generateModel } from "../services/api";
 
 const emit = defineEmits(["model-ready"]);
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
 
 const selectedFile = ref(null);
 const loading = ref(false);
+const progress = ref(0);
+let progressTimer;
+
+function stopProgress() {
+  clearInterval(progressTimer);
+  progressTimer = undefined;
+}
+
+function startProgress() {
+  stopProgress();
+  progress.value = 0;
+  const startedAt = Date.now();
+  // The API returns a final file, not inference steps. This is explicitly an
+  // estimate: keep space for completion until the real request succeeds.
+  progressTimer = setInterval(() => {
+    const elapsed = Date.now() - startedAt;
+    progress.value = Math.min(95, Math.round(95 * (1 - Math.exp(-elapsed / 45000))));
+  }, 300);
+}
+
+onBeforeUnmount(stopProgress);
 const error = ref("");
 const result = ref(null);
 const isDragging = ref(false);
 const fileInput = ref(null);
 
 function setFile(file) {
-  if (!file) return;
+  if (!file || loading.value) return;
 
-  if (!file.type.startsWith("image/")) {
-    error.value = "Можно загружать только изображения.";
+  let validationError = "";
+  if (!/\.(jpe?g|png|webp)$/i.test(file.name) || !["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(file.type)) {
+    validationError = "Выберите фотографию в формате JPG, PNG или WEBP.";
+  } else if (!file.size) {
+    validationError = "Файл пустой. Выберите другую фотографию.";
+  } else if (file.size > MAX_FILE_BYTES) {
+    validationError = "Фотография слишком большая. Максимальный размер — 10 МБ.";
+  }
+  if (validationError) {
+    error.value = validationError;
     selectedFile.value = null;
     result.value = null;
     return;
@@ -50,6 +80,7 @@ function handleDrop(event) {
 }
 
 async function handleUpload() {
+  if (loading.value) return;
   if (!selectedFile.value) {
     error.value = "Сначала выберите фотографию.";
     return;
@@ -58,14 +89,19 @@ async function handleUpload() {
   loading.value = true;
   error.value = "";
   result.value = null;
+  startProgress();
 
   try {
     result.value = await generateModel(selectedFile.value);
-
+    stopProgress();
+    progress.value = 100;
     emit("model-ready", result.value.url);
+    // Let the completed bar be visible before restoring the action button.
+    await new Promise(resolve => setTimeout(resolve, 400));
   } catch (err) {
     error.value = err.message || "Не удалось создать 3D-модель.";
   } finally {
+    stopProgress();
     loading.value = false;
   }
 }
@@ -77,7 +113,8 @@ async function handleUpload() {
       ref="fileInput"
       class="photo-file-input"
       type="file"
-      accept="image/*"
+      accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+      :disabled="loading"
       @change="handleFileSelect"
     />
 
@@ -117,13 +154,14 @@ async function handleUpload() {
       <button
         type="button"
         class="file-picker-button"
+        :disabled="loading"
         @click="fileInput?.click()"
       >
         Выбрать фотографию
       </button>
 
       <p class="dropzone-hint">
-        Поддерживаются изображения JPG, PNG и WEBP
+        JPG, PNG и WEBP · до 10 МБ<br />Разрешение — до 20 мегапикселей
       </p>
     </div>
 
@@ -137,6 +175,7 @@ async function handleUpload() {
         type="button"
         class="remove-selected-file"
         aria-label="Убрать выбранную фотографию"
+        :disabled="loading"
         @click="selectedFile = null; result = null; error = ''"
       >
         ×
@@ -145,22 +184,24 @@ async function handleUpload() {
 
     <button
       type="button"
-      class="primary-button"
+      class="primary-button generation-button"
       @click="handleUpload"
       :disabled="!selectedFile || loading"
+      :aria-busy="loading"
     >
-      {{ loading ? "Создаём 3D-модель..." : "Создать 3D-аватар" }}
+      <span v-if="loading" class="generation-button-progress" :style="{ width: `${progress}%` }" aria-hidden="true"></span>
+      <span class="generation-button-label">
+        {{ loading ? (progress === 100 ? "Модель готова · 100%" : `Создаём 3D-модель… ≈ ${progress}%`) : "Создать 3D-аватар" }}
+      </span>
     </button>
+    <p v-if="loading && progress < 100" class="generation-progress-note" role="status">Примерный прогресс. Время зависит от очереди генератора.</p>
 
     <p v-if="error" class="error-message">
       {{ error }}
     </p>
 
     <div v-if="result" class="success-box">
-      <h3>Фотография загружена</h3>
-      <!-- <p>Имя файла:</p>
-      <code>{{ result.filename }}</code>
-      <p>Статус: {{ result.status }}</p> -->
+      <h3>3D-модель готова</h3>
     </div>
   </div>
 </template>

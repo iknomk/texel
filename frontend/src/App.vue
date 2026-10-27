@@ -11,6 +11,8 @@ const email = ref("");
 const password = ref("");
 const error = ref("");
 const loading = ref(false);
+const profileCacheKey = ref(0);
+function resetProfileCache() { profileCacheKey.value += 1; }
 
 function openAuth(type) {
   modal.value = type;
@@ -25,6 +27,7 @@ function handleKey(event) { if (event.key === "Escape") closeAuth(); }
 onMounted(() => {
   window.addEventListener("texel:open-auth", handleOpenEvent);
   window.addEventListener("keydown", handleKey);
+  window.addEventListener("texel:auth-changed", resetProfileCache);
   if (["/login", "/register"].includes(router.currentRoute.value.path)) {
     openAuth(router.currentRoute.value.path === "/register" ? "register" : "login");
     router.replace("/");
@@ -33,6 +36,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener("texel:open-auth", handleOpenEvent);
   window.removeEventListener("keydown", handleKey);
+  window.removeEventListener("texel:auth-changed", resetProfileCache);
 });
 async function submitAuth() {
   error.value = "";
@@ -62,7 +66,11 @@ async function submitAuth() {
 <template>
   <div class="app-shell">
     <NavBar />
-    <router-view />
+    <router-view v-slot="{ Component, route }">
+      <KeepAlive include="ProfileView" :max="1">
+        <component :is="Component" :key="route.name === 'profile' ? `profile-${profileCacheKey}` : route.path" />
+      </KeepAlive>
+    </router-view>
     <Transition name="modal">
       <div v-if="modal" class="modal-backdrop" @click.self="closeAuth">
         <section class="auth-modal" role="dialog" aria-modal="true" :aria-label="modal === 'login' ? 'Вход' : 'Регистрация'">

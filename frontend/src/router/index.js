@@ -7,10 +7,17 @@ import HomeView from "../views/HomeView.vue";
 import LoginView from "../views/LoginView.vue";
 import RegisterView from "../views/RegisterView.vue";
 import ProfileView from "../views/ProfileView.vue";
+import PricingView from "../views/PricingView.vue";
 
 
 // Описание страниц приложения
 const routes = [
+
+    {
+        path: "/pricing",
+        name: "pricing",
+        component: PricingView
+    },
 
     {
         path: "/",
@@ -46,7 +53,12 @@ const router = createRouter({
 
     history: createWebHistory(),
 
-    routes
+    routes,
+    scrollBehavior(to, from, savedPosition) {
+        if (savedPosition) return savedPosition;
+        if (to.hash) return { el: to.hash };
+        return { top: 0 };
+    }
 
 });
 
