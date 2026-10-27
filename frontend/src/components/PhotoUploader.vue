@@ -1,6 +1,8 @@
 <script setup>
 import { ref } from "vue";
-import { uploadPhoto } from "../services/api";
+import { generateModel } from "../services/api";
+
+const emit = defineEmits(["model-ready"]);
 
 const selectedFile = ref(null);
 const loading = ref(false);
@@ -58,9 +60,11 @@ async function handleUpload() {
   result.value = null;
 
   try {
-    result.value = await uploadPhoto(selectedFile.value);
+    result.value = await generateModel(selectedFile.value);
+
+    emit("model-ready", result.value.url);
   } catch (err) {
-    error.value = err.message || "Не удалось загрузить фотографию.";
+    error.value = err.message || "Не удалось создать 3D-модель.";
   } finally {
     loading.value = false;
   }
@@ -145,7 +149,7 @@ async function handleUpload() {
       @click="handleUpload"
       :disabled="!selectedFile || loading"
     >
-      {{ loading ? "Загрузка..." : "Загрузить фотографию" }}
+      {{ loading ? "Создаём 3D-модель..." : "Создать 3D-аватар" }}
     </button>
 
     <p v-if="error" class="error-message">
@@ -154,9 +158,9 @@ async function handleUpload() {
 
     <div v-if="result" class="success-box">
       <h3>Фотография загружена</h3>
-      <p>Имя файла:</p>
+      <!-- <p>Имя файла:</p>
       <code>{{ result.filename }}</code>
-      <p>Статус: {{ result.status }}</p>
+      <p>Статус: {{ result.status }}</p> -->
     </div>
   </div>
 </template>

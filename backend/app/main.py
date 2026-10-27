@@ -4,6 +4,15 @@ import shutil
 
 import bcrypt
 
+import cv2
+import numpy as np
+
+from PIL import Image
+from rembg import remove
+
+from fastapi.responses import FileResponse
+
+
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -14,6 +23,9 @@ from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
 from jose import jwt, JWTError
+
+from fastapi.staticfiles import StaticFiles
+from gradio_client import Client, handle_file
 
 
 # =========================
@@ -34,6 +46,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# =========================
+# ХРАНЕНИЕ СГЕНЕРИРОВАННЫХ МОДЕЛЕЙ
+# =========================
+
+MODELS_DIR = Path("generated_models")
+MODELS_DIR.mkdir(parents=True, exist_ok=True)
+
+app.mount(
+    "/generated_models",
+    StaticFiles(directory=str(MODELS_DIR)),
+    name="generated_models"
+)
 
 # =========================
 # БАЗА ДАННЫХ
@@ -413,3 +438,168 @@ def health_check():
     return {
         "status": "ok"
     }
+
+# =========================
+# ГЕНЕРАЦИЯ 3D-МОДЕЛИ ИЗ ФОТО
+# =========================
+
+def preprocess_image(source_path: Path) -> Path:
+    """
+    Удаляет фон, сохраняет естественные цвета и детали человека.
+    Возвращает путь к PNG с прозрачным фоном для генерации 3D.
+    """
+    import io
+
+    output_path = UPLOAD_DIR / f"{uuid4()}_processed.png"
+
+    # 1. Читаем исходную фотографию
+    with source_path.open("rb") as file:
+        image_bytes = file.read()
+
+    # 2. Удаляем фон, сохраняя изображение человека
+    result_bytes = remove(image_bytes)
+
+    # 3. Открываем изображение в RGBA:
+    # сохраняем исходные цвета и прозрачность
+    image = Image.open(io.BytesIO(result_bytes)).convert("RGBA")
+
+    # 4. Сохраняем без постеризации, контуров и агрессивных фильтров
+    image.save(output_path, format="PNG")
+
+    print(f"Подготовленное изображение сохранено: {output_path}")
+
+    return output_path
+
+@app.post("/api/models/generate")
+def generate_3d_model(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=400,
+            detail="Загрузите изображение JPG, PNG или WEBP"
+        )
+
+    temp_path = None
+    processed_path = None
+
+    try:
+        # Временно сохраняем входное фото
+        temp_path = UPLOAD_DIR / f"{uuid4()}_{Path(file.filename or 'photo.png').name}"
+
+        with temp_path.open("wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        processed_path = preprocess_image(temp_path)
+
+        # Вызываем Hunyuan3D на стороне Hugging Face
+        client = Client(
+            "tencent/Hunyuan3D-2",
+            httpx_kwargs={
+                "timeout": 600
+            }
+        )
+
+        print("Доступные API Hunyuan3D:")
+        print(client.view_api())
+
+
+        job = client.submit(
+            caption=None,
+            image=handle_file(str(processed_path)),
+            mv_image_front=None,
+            mv_image_back=None,
+            mv_image_left=None,
+            mv_image_right=None,
+            steps=30,
+            guidance_scale=5,
+            seed=1234,
+            octree_resolution=256,
+            check_box_rembg=True,
+            num_chunks=8000,
+            randomize_seed=True,
+            api_name="/shape_generation"
+        )
+
+        print("Hunyuan3D: создаём модель...")
+        result = job.result()
+        print("HUNYUAN RESULT:", repr(result))
+
+
+        # Получаем путь к модели из ответа Hunyuan3D
+        if not result or not result[0]:
+            raise RuntimeError("Генератор не вернул файл модели")
+
+        mesh_result = result[0]
+
+        if isinstance(mesh_result, dict):
+            source_value = mesh_result.get("value")
+        else:
+            source_value = mesh_result
+
+        if not source_value:
+            raise RuntimeError(
+                f"В ответе Hunyuan3D отсутствует путь к модели: {mesh_result!r}"
+            )
+
+        source_path = Path(str(source_value))
+
+        if not source_path.is_file():
+            raise RuntimeError(
+                f"Файл модели не найден: {source_path}"
+            )
+
+        model_name = f"{uuid4()}.glb"
+        destination = MODELS_DIR / model_name
+        shutil.copy2(source_path, destination)
+
+        print(f"Модель сохранена: {destination}")
+
+        return {
+            "status": "success",
+            "filename": model_name,
+            "url": f"/generated_models/{model_name}"
+        }
+
+    except Exception as exc:
+        import traceback
+
+        traceback.print_exc()
+
+        raise HTTPException(
+            status_code=502,
+            detail=f"Не удалось создать 3D-модель: {type(exc).__name__}: {exc}"
+        )
+
+    finally:
+        if temp_path and temp_path.exists():
+            temp_path.unlink()
+        # if processed_path and processed_path.exists():
+        #     processed_path.unlink()
+
+
+@app.get("/api/models/download/{filename}")
+def download_model(filename: str):
+    # Не разрешаем передавать пути к чужим файлам
+    safe_filename = Path(filename).name
+
+    if safe_filename != filename or not safe_filename.endswith(".glb"):
+        raise HTTPException(
+            status_code=400,
+            detail="Некорректное имя файла"
+        )
+
+    model_path = MODELS_DIR / safe_filename
+
+    if not model_path.is_file():
+        raise HTTPException(
+            status_code=404,
+            detail="Модель не найдена"
+        )
+
+    return FileResponse(
+        path=model_path,
+        media_type="model/gltf-binary",
+        filename=safe_filename
+    )

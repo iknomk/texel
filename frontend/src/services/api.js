@@ -176,3 +176,76 @@ export function isAuthenticated() {
         localStorage.getItem("token")
     );
 }
+
+
+// =========================
+// Загрузка готовой 3D-модели (.glb) на сервер
+// =========================
+
+export async function upload3DModel(file) {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+        throw new Error("Сначала войдите в аккаунт");
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch(
+        `${API_URL}/api/models/result`,
+        {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token}`
+            },
+            body: formData
+        }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(data.detail || "Ошибка загрузки модели");
+    }
+
+    return data;
+}
+
+
+// Создание 3D-модели из фотографии
+export async function generateModel(file) {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+        throw new Error("Сначала войдите в аккаунт");
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch(
+        `${API_URL}/api/models/generate`,
+        {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token}`
+            },
+            body: formData
+        }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(
+            data.detail || "Не удалось создать 3D-модель"
+        );
+    }
+
+    // Превращаем относительный путь backend в полный URL
+    return {
+        ...data,
+        url: `${API_URL}${data.url}`
+    };
+}
