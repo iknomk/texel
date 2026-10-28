@@ -1,32 +1,32 @@
-# Python
+# python
 __pycache__/
 *.py[cod]
 venv/
 .venv/
 env/
 
-# Python database
+# python database
 *.db
 *.sqlite
 *.sqlite3
 
-# Uploaded photos
+# uploaded photos
 backend/uploads/*
 !backend/uploads/.gitkeep
 
-# Environment variables
+# environment variables
 .env
 .env.*
 !.env.example
 
-# Node
+# node
 node_modules/
 dist/
 
-# IDE
+# ide
 .vscode/
 .idea/
 
-# OS
+# os
 .DS_Store
 Thumbs.db

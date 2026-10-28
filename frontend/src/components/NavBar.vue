@@ -26,7 +26,7 @@ onBeforeUnmount(() => window.removeEventListener("texel:auth-changed", loadUser)
         </template>
         <template v-else>
           <button class="nav-login" @click="openAuth('login')">Войти</button>
-          <button class="button button-primary header-cta" @click="openAuth('register')">Начать бесплатно <span>↗</span></button>
+          <button class="button button-primary header-cta" @click="openAuth('register')">Начать бесплатно <span class="button-icon">↗</span></button>
         </template>
       </nav>
     </div>

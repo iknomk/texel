@@ -1,10 +1,8 @@
-// Адрес нашего FastAPI backend
+// адрес fastapi backend
 const API_URL = "http://127.0.0.1:8000";
 
 
-// =========================
-// РЕГИСТРАЦИЯ
-// =========================
+// регистрация
 
 export async function register(username, email, password) {
     const response = await fetch(
@@ -36,9 +34,7 @@ export async function register(username, email, password) {
 }
 
 
-// =========================
-// ВХОД
-// =========================
+// вход
 
 export async function login(username, password) {
     const response = await fetch(
@@ -65,7 +61,7 @@ export async function login(username, password) {
         );
     }
 
-    // Сохраняем JWT-токен
+    // сохраняем jwt-токен
     localStorage.setItem(
         "token",
         data.access_token
@@ -75,9 +71,7 @@ export async function login(username, password) {
 }
 
 
-// =========================
-// ПОЛУЧЕНИЕ ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ
-// =========================
+// получение текущего пользователя
 
 export async function getCurrentUser() {
 
@@ -110,9 +104,7 @@ export async function getCurrentUser() {
 }
 
 
-// =========================
-// ЗАГРУЗКА ФОТОГРАФИИ
-// =========================
+// загрузка фотографии
 
 export async function uploadPhoto(file) {
 
@@ -122,7 +114,7 @@ export async function uploadPhoto(file) {
         throw new Error("Необходимо войти в аккаунт");
     }
 
-    // FormData нужен для отправки файла
+    // formdata нужен для отправки файла
     const formData = new FormData();
 
     formData.append(
@@ -155,20 +147,16 @@ export async function uploadPhoto(file) {
 }
 
 
-// =========================
-// ВЫХОД
-// =========================
+// выход
 
 export function logout() {
 
-    // Удаляем JWT
+    // удаляем jwt
     localStorage.removeItem("token");
 }
 
 
-// =========================
-// ПРОВЕРКА АВТОРИЗАЦИИ
-// =========================
+// проверка авторизации
 
 export function isAuthenticated() {
 
@@ -178,9 +166,7 @@ export function isAuthenticated() {
 }
 
 
-// =========================
-// Загрузка готовой 3D-модели (.glb) на сервер
-// =========================
+// загрузка готовой 3d-модели (.glb) на сервер
 
 export async function upload3DModel(file) {
     const token = localStorage.getItem("token");
@@ -213,7 +199,7 @@ export async function upload3DModel(file) {
 }
 
 
-// Создание 3D-модели из фотографии
+// создание 3d-модели из фотографии
 export async function generateModel(file) {
     const token = localStorage.getItem("token");
 
@@ -243,7 +229,7 @@ export async function generateModel(file) {
         );
     }
 
-    // Превращаем относительный путь backend в полный URL
+    // превращаем относительный путь backend в полный url
     return {
         ...data,
         url: `${API_URL}${data.url}`

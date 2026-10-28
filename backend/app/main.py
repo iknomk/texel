@@ -26,9 +26,7 @@ from fastapi.staticfiles import StaticFiles
 from gradio_client import Client, handle_file
 
 
-# =========================
-# НАСТРОЙКИ
-# =========================
+# настройки
 
 app = FastAPI(
     title="3D Model Generator API",
@@ -45,9 +43,7 @@ app.add_middleware(
 )
 
 
-# =========================
-# ХРАНЕНИЕ СГЕНЕРИРОВАННЫХ МОДЕЛЕЙ
-# =========================
+# хранение сгенерированных моделей
 
 MODELS_DIR = Path("generated_models")
 MODELS_DIR.mkdir(parents=True, exist_ok=True)
@@ -58,9 +54,7 @@ app.mount(
     name="generated_models"
 )
 
-# =========================
-# БАЗА ДАННЫХ
-# =========================
+# база данных
 
 DATABASE_URL = "sqlite:///./users.db"
 
@@ -119,9 +113,7 @@ def get_db():
         db.close()
 
 
-# =========================
-# ПАРОЛИ И JWT
-# =========================
+# пароли и jwt
 
 SECRET_KEY = "my-secret-key-change-this"
 ALGORITHM = "HS256"
@@ -181,9 +173,7 @@ def create_access_token(user_id: int) -> str:
     )
 
 
-# =========================
-# СХЕМЫ
-# =========================
+# схемы
 
 class RegisterRequest(BaseModel):
     username: str
@@ -201,9 +191,7 @@ class LoginResponse(BaseModel):
     token_type: str
 
 
-# =========================
-# АВТОРИЗАЦИЯ
-# =========================
+# авторизация
 
 security = HTTPBearer()
 
@@ -251,9 +239,7 @@ def get_current_user(
     return user
 
 
-# =========================
-# РЕГИСТРАЦИЯ
-# =========================
+# регистрация
 
 @app.post("/api/auth/register")
 def register(
@@ -261,7 +247,7 @@ def register(
     db: Session = Depends(get_db)
 ):
 
-    # Проверяем username
+    # проверяем username
 
     existing_user = db.query(User).filter(
         User.username == data.username
@@ -273,7 +259,7 @@ def register(
             detail="Пользователь с таким username уже существует"
         )
 
-    # Проверяем email
+    # проверяем email
 
     existing_email = db.query(User).filter(
         User.email == data.email
@@ -285,11 +271,11 @@ def register(
             detail="Пользователь с таким email уже существует"
         )
 
-    # Хешируем пароль
+    # хешируем пароль
 
     password_hash = hash_password(data.password)
 
-    # Создаем пользователя
+    # создаем пользователя
 
     user = User(
         username=data.username,
@@ -309,9 +295,7 @@ def register(
     }
 
 
-# =========================
-# ВХОД
-# =========================
+# вход
 
 @app.post(
     "/api/auth/login",
@@ -341,7 +325,7 @@ def login(
             detail="Неверный username или пароль"
         )
 
-    # Создаем JWT
+    # создаем jwt
 
     token = create_access_token(user.id)
 
@@ -351,9 +335,7 @@ def login(
     }
 
 
-# =========================
-# ПРОФИЛЬ ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ
-# =========================
+# профиль текущего пользователя
 
 @app.get("/api/auth/me")
 def get_me(
@@ -367,9 +349,7 @@ def get_me(
     }
 
 
-# =========================
-# ЗАГРУЗКА ФОТОГРАФИИ
-# =========================
+# загрузка фотографии
 
 UPLOAD_DIR = Path("uploads")
 
@@ -384,23 +364,23 @@ async def upload_photo(
     current_user: User = Depends(get_current_user)
 ):
 
-    # Получаем расширение
+    # получаем расширение
 
     file_extension = Path(
         file.filename
     ).suffix.lower()
 
-    # Создаем уникальное имя
+    # создаем уникальное имя
 
     new_filename = (
         f"{uuid4()}{file_extension}"
     )
 
-    # Полный путь
+    # полный путь
 
     file_path = UPLOAD_DIR / new_filename
 
-    # Сохраняем файл
+    # сохраняем файл
 
     save_validated_photo(file, file_path)
 
@@ -410,9 +390,7 @@ async def upload_photo(
     }
 
 
-# =========================
-# ПРОВЕРКА API
-# =========================
+# проверка api
 
 @app.get("/api/health")
 def health_check():
@@ -421,9 +399,7 @@ def health_check():
         "status": "ok"
     }
 
-# =========================
-# ГЕНЕРАЦИЯ 3D-МОДЕЛИ ИЗ ФОТО
-# =========================
+# генерация 3d-модели из фото
 
 def preprocess_image(source_path: Path) -> Path:
     """
@@ -446,14 +422,14 @@ def generate_3d_model(
     processed_path = None
 
     try:
-        # Временно сохраняем входное фото
+        # временно сохраняем входное фото
         temp_path = UPLOAD_DIR / f"{uuid4()}_{Path(file.filename or 'photo.png').name}"
 
         save_validated_photo(file, temp_path)
 
         processed_path = preprocess_image(temp_path)
 
-        # Вызываем Hunyuan3D на стороне Hugging Face
+        # вызываем hunyuan3d на стороне hugging face
         client = Client(
             "tencent/Hunyuan3D-2",
             httpx_kwargs={
@@ -487,7 +463,7 @@ def generate_3d_model(
         print("HUNYUAN RESULT:", repr(result))
 
 
-        # Получаем путь к модели из ответа Hunyuan3D
+        # получаем путь к модели из ответа hunyuan3d
         if not result or not result[0]:
             raise RuntimeError("Генератор не вернул файл модели")
 
@@ -535,13 +511,11 @@ def generate_3d_model(
     finally:
         if temp_path and temp_path.exists():
             temp_path.unlink()
-        # if processed_path and processed_path.exists():
-        #     processed_path.unlink()
 
 
 @app.get("/api/models/download/{filename}")
 def download_model(filename: str):
-    # Не разрешаем передавать пути к чужим файлам
+    # не разрешаем передавать пути к чужим файлам
     safe_filename = Path(filename).name
 
     if safe_filename != filename or not safe_filename.endswith(".glb"):

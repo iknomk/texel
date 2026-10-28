@@ -33,7 +33,7 @@ def save_validated_photo(upload: UploadFile, destination: Path):
             if image.width * image.height > MAX_IMAGE_PIXELS:
                 raise HTTPException(413, "Разрешение фотографии слишком большое. Максимум — 20 мегапикселей, например 5000 × 4000 пикселей.")
             image.verify()
-        # Decode only after the pixel limit has been checked, to catch damaged
+        # decode only after the pixel limit has been checked, to catch damaged
         # image data before the background-removal model is started.
         with Image.open(destination) as image:
             image.load()

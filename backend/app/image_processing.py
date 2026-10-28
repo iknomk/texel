@@ -1,4 +1,4 @@
-"""Background removal with a bounded memory footprint for the demo laptop."""
+"""удаление фона с ограниченным расходом оперативной памяти."""
 
 from functools import lru_cache
 from pathlib import Path
@@ -24,10 +24,10 @@ def _background_session():
 
 
 def prepare_foreground(source: Path, destination: Path):
-    # Bound both decoding/inference work and session creation to one photo.
+    # bound both decoding/inference work and session creation to one photo.
     with _processing_lock:
         with Image.open(source) as original:
-            # JPEG draft reduces decoding memory before loading large photos.
+            # jpeg draft reduces decoding memory before loading large photos.
             original.draft("RGB", (1024, 1024))
             image = ImageOps.exif_transpose(original)
             image.thumbnail((1024, 1024), Image.Resampling.LANCZOS)

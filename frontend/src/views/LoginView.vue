@@ -36,7 +36,7 @@ async function handleLogin() {
             password.value
         );
 
-        // После успешного входа
+        // после успешного входа
         // открываем профиль
         router.push("/profile");
 
@@ -108,7 +108,7 @@ async function handleLogin() {
 
 
                 <button
-                    class="primary-button full-width"
+                    class="button button-primary button-wide"
                     type="submit"
                     :disabled="loading"
                 >

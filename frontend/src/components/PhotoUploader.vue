@@ -19,7 +19,7 @@ function startProgress() {
   stopProgress();
   progress.value = 0;
   const startedAt = Date.now();
-  // The API returns a final file, not inference steps. This is explicitly an
+  // the api returns a final file, not inference steps. this is explicitly an
   // estimate: keep space for completion until the real request succeeds.
   progressTimer = setInterval(() => {
     const elapsed = Date.now() - startedAt;
@@ -59,7 +59,7 @@ function setFile(file) {
 function handleFileSelect(event) {
   setFile(event.target.files?.[0]);
 
-  // Позволяет выбрать тот же файл повторно
+  // позволяет выбрать тот же файл повторно
   event.target.value = "";
 }
 
@@ -96,7 +96,7 @@ async function handleUpload() {
     stopProgress();
     progress.value = 100;
     emit("model-ready", result.value.url);
-    // Let the completed bar be visible before restoring the action button.
+    // let the completed bar be visible before restoring the action button.
     await new Promise(resolve => setTimeout(resolve, 400));
   } catch (err) {
     error.value = err.message || "Не удалось создать 3D-модель.";
@@ -153,7 +153,7 @@ async function handleUpload() {
 
       <button
         type="button"
-        class="file-picker-button"
+        class="button button-primary button-upload"
         :disabled="loading"
         @click="fileInput?.click()"
       >
@@ -184,7 +184,7 @@ async function handleUpload() {
 
     <button
       type="button"
-      class="primary-button generation-button"
+      class="button button-primary generation-button"
       @click="handleUpload"
       :disabled="!selectedFile || loading"
       :aria-busy="loading"

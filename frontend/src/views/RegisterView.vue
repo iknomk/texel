@@ -40,7 +40,7 @@ async function handleRegister() {
         <input id="password" v-model="password" type="password" autocomplete="new-password" minlength="8" required />
 
         <p v-if="error" class="error-message">{{ error }}</p>
-        <button class="primary-button full-width" type="submit" :disabled="loading">
+        <button class="button button-primary button-wide" type="submit" :disabled="loading">
           {{ loading ? "Создание аккаунта..." : "Зарегистрироваться" }}
         </button>
       </form>

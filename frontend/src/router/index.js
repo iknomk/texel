@@ -10,7 +10,7 @@ import ProfileView from "../views/ProfileView.vue";
 import PricingView from "../views/PricingView.vue";
 
 
-// Описание страниц приложения
+// описание страниц приложения
 const routes = [
 
     {
@@ -63,16 +63,14 @@ const router = createRouter({
 });
 
 
-// =========================
-// ЗАЩИТА СТРАНИЦ
-// =========================
+// защита страниц
 
 router.beforeEach((to) => {
 
     const token =
         localStorage.getItem("token");
 
-    // Если страница требует авторизации,
+    // если страница требует авторизации,
     // но токена нет — отправляем на login
     if (
         to.meta.requiresAuth &&

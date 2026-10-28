@@ -44,7 +44,7 @@ async function submitAuth() {
   try {
     if (modal.value === "register") {
       await register(username.value.trim(), email.value.trim(), password.value);
-      // Автоматически не авторизуем: пользователь входит обычным способом.
+      // автоматически не авторизуем: пользователь входит обычным способом.
       modal.value = "login";
       password.value = "";
       error.value = "";
